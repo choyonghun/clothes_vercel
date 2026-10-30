@@ -1,0 +1,67 @@
+{
+  "name": "clothes-vercel",
+  "version": "0.1.0",
+  "private": true,
+  "proxy": "http://localhost:3001",
+  "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^9.5.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^13.5.0",
+    "@types/jest": "^27.5.2",
+    "@types/node": "^16.18.126",
+    "ajv": "^8.18.0",
+    "axios": "^1.13.6",
+    "bcryptjs": "^2.4.3",
+    "pg": "^8.23.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-scripts": "5.0.1",
+    "three": "^0.183.2",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm:dev:api\" \"npm:start\"",
+    "dev:api": "tsx watch scripts/dev-api.ts",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "test:server": "tsx --test server/*.test.ts",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.server.json",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.12",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.183.1",
+    "concurrently": "^10.0.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

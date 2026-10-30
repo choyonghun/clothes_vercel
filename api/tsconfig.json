@@ -1,0 +1,6 @@
+{
+  // Vercel은 함수 파일에서 가장 가까운 tsconfig.json으로 컴파일함.
+  // 루트 tsconfig.json은 React(CRA)용이라 "module": "esnext"인데, 그대로 쓰면 함수가 ES 모듈로 나와
+  // 확장자 없는 import("../../server/http")를 찾지 못하고 실행 시 죽으므로, 서버 코드는 CommonJS로 컴파일함
+  "extends": "../tsconfig.server.json"
+}
