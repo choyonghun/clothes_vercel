@@ -2,9 +2,28 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import LoginPage from "./LoginPage";
 import FittingPage from "./FittingPage";
+import WishlistPage from "./WishlistPage";
 
 const IDLE_WARNING_MS = 25 * 60 * 1000; // 25분 무활동 시 경고
 const IDLE_TIMEOUT_MS =  5 * 60 * 1000; // 경고 후 5분 내 미응답 시 로그아웃
+
+// 페이지 전환은 주소의 # 뒤로 구분 (#/wishlist). 라우터 없이도 새로고침·뒤로가기가 동작하고,
+// Vercel에 경로별 재작성(rewrite) 설정을 추가할 필요가 없음
+type Page = "fitting" | "wishlist";
+const pageFromHash = (): Page => (window.location.hash === "#/wishlist" ? "wishlist" : "fitting");
+function usePage(): [Page, (p: Page) => void] {
+  const [page, setPage] = useState<Page>(pageFromHash);
+  useEffect(() => {
+    const onHash = () => setPage(pageFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const go = useCallback((p: Page) => {
+    window.location.hash = p === "wishlist" ? "/wishlist" : "";
+    window.scrollTo(0, 0);
+  }, []);
+  return [page, go];
+}
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn]   = useState(false);
@@ -13,6 +32,7 @@ export default function App() {
   const [checking, setChecking]       = useState(true);
   const [showWarning, setShowWarning] = useState(false);
   const [remaining, setRemaining]     = useState(300);
+  const [page, goTo]                  = usePage();
 
   const warningTimer = useRef<ReturnType<typeof setTimeout>  | null>(null);
   const logoutTimer  = useRef<ReturnType<typeof setTimeout>  | null>(null);
@@ -121,7 +141,9 @@ export default function App() {
       {!isLoggedIn ? (
         <LoginPage onLoginSuccess={handleLoginSuccess} />
       ) : (
-        <FittingPage userId={userId!} username={username} onLogout={handleLogout} />
+        page === "wishlist"
+          ? <WishlistPage username={username} onBack={() => goTo("fitting")} onLogout={handleLogout} />
+          : <FittingPage userId={userId!} username={username} onLogout={handleLogout} onOpenWishlist={() => goTo("wishlist")} />
       )}
 
       {/* ── 자동 로그아웃 경고 모달 ── */}

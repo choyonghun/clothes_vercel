@@ -17,6 +17,46 @@ export async function saveUser(user: User) {
   await db.query("INSERT INTO users (login_id, password, username) VALUES ($1, $2, $3)", [user.loginId, user.password, user.username]);
 }
 
+// ── 개발자한테 바라는 목록(댓글) ─────────────────────────
+// 익명 게시판이라 작성자 이름은 조회하지 않음 (user_id는 본인 수정 권한 확인에만 사용)
+export interface CommentRow {
+  commentId: number; userId: number; parentId: number | null; content: string; deleted: boolean;
+  createdAt: string; updatedAt: string | null;
+}
+const iso = (v: unknown) => (v === null || v === undefined ? null : new Date(v as string).toISOString());
+const toComment = (r: any): CommentRow => ({
+  commentId: id(r.comment_id)!, userId: id(r.user_id)!, parentId: id(r.parent_id), content: r.content, deleted: !!r.deleted,
+  createdAt: iso(r.created_at)!, updatedAt: iso(r.updated_at),
+});
+
+export async function listComments(): Promise<CommentRow[]> {
+  const db = await getDb();
+  const rows = await db.query("SELECT * FROM wish_comment ORDER BY created_at, comment_id");
+  return rows.map(toComment);
+}
+
+export async function findComment(commentId: number): Promise<CommentRow | null> {
+  const db = await getDb();
+  const [r] = await db.query("SELECT * FROM wish_comment WHERE comment_id = $1", [commentId]);
+  return r ? toComment(r) : null;
+}
+
+export async function insertComment(userId: number, content: string, parentId: number | null) {
+  const db = await getDb();
+  await db.query("INSERT INTO wish_comment (user_id, content, parent_id) VALUES ($1, $2, $3)", [userId, content, parentId]);
+}
+
+export async function updateComment(commentId: number, content: string) {
+  const db = await getDb();
+  await db.query("UPDATE wish_comment SET content = $2, updated_at = now() WHERE comment_id = $1", [commentId, content]);
+}
+
+/** 내용을 비우고 삭제 표시만 함 (답글이 달려 있을 수 있으므로 행은 남김) */
+export async function deleteComment(commentId: number) {
+  const db = await getDb();
+  await db.query("UPDATE wish_comment SET deleted = TRUE, content = '' WHERE comment_id = $1", [commentId]);
+}
+
 // ── 신체 / 옷 / 바지 치수 ───────────────────────────────
 export async function saveBodySize(s: BodySize) {
   const db = await getDb();

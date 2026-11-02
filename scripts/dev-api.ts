@@ -15,6 +15,7 @@ import cloth from "../api/bodycheck/cloth";
 import pants from "../api/bodycheck/pants";
 import fitguide from "../api/bodycheck/fitguide";
 import allstats from "../api/bodycheck/allstats/[userId]";
+import wishlist from "../api/wishlist/index";
 
 type Fn = (req: NodeReq, res: http.ServerResponse) => Promise<void>;
 
@@ -29,6 +30,7 @@ const routes: [RegExp, Fn, string[]][] = [
   [/^\/api\/bodycheck\/pants$/, pants, []],
   [/^\/api\/bodycheck\/fitguide$/, fitguide, []],
   [/^\/api\/bodycheck\/allstats\/([^/]+)$/, allstats, ["userId"]],
+  [/^\/api\/wishlist$/, wishlist, []],
 ];
 
 const PORT = Number(process.env.API_PORT || 3001);

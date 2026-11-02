@@ -22,6 +22,7 @@ export interface ApiResult {
 }
 
 type Handler = (req: ApiRequest) => Promise<ApiResult>;
+type Method = "GET" | "POST" | "PUT" | "DELETE";
 
 export const ok = (json: unknown): ApiResult => ({ json });
 export const text = (status: number, body: string): ApiResult => ({ status, text: body });
@@ -38,9 +39,9 @@ export function denyUnlessOwner(req: ApiRequest, userId: number | null): ApiResu
 }
 
 /** 메서드별 핸들러를 Vercel 함수(default export)로 감쌈 */
-export function route(handlers: Partial<Record<"GET" | "POST", Handler>>) {
+export function route(handlers: Partial<Record<Method, Handler>>) {
   return async (req: NodeReq, res: ServerResponse) => {
-    const handler = handlers[(req.method || "GET") as "GET" | "POST"];
+    const handler = handlers[(req.method || "GET") as Method];
     if (!handler) return send(res, { status: 405, text: "Method Not Allowed" });
 
     const secure = isSecure(req);

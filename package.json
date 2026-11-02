@@ -29,6 +29,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "test:server": "tsx --test server/*.test.ts",
+    "create-admin": "tsx scripts/create-admin.ts",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.server.json",
     "eject": "react-scripts eject"
   },

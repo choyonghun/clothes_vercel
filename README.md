@@ -24,6 +24,7 @@ api/                Vercel 함수 (파일 경로 = API 주소)
   bodycheck/pants.ts        POST /api/bodycheck/pants
   bodycheck/fitguide.ts     POST /api/bodycheck/fitguide
   bodycheck/allstats/[userId].ts  GET /api/bodycheck/allstats/{userId}
+  wishlist/index.ts         GET·POST·DELETE /api/wishlist (개발자한테 바라는 목록)
 server/             함수들이 공유하는 코드 (DB, 세션, 입력 검증)
 scripts/            로컬 개발 서버 (배포에는 포함되지 않음)
 src/                React 화면
@@ -42,6 +43,41 @@ src/                React 화면
 - **정면 + 측면 2뷰**: 측면에서 몸통 두께·엉덩이·밑위가 보입니다.
 - 문제가 있는 부위에는 `−5cm` 같은 표시가 붙고, 부위나 핏 가이드 항목에 마우스를 올리면 서로 연결되어 강조됩니다.
 - 치수를 바꾸면 300ms 뒤 자동으로 다시 계산합니다 (계산은 브라우저에서 하므로 서버 왕복 없음).
+
+## 개발자한테 바라는 목록
+
+핏 화면 오른쪽 위 **💬 개발자한테 바라는 목록** 버튼으로 이동하는 의견 게시판입니다 (주소: `/#/wishlist`, 새로고침·뒤로가기 가능).
+
+- 댓글 + 답글(1단계). 답글에 단 답글은 같은 원댓글 아래로 모입니다.
+- 로그인한 사용자만 들어가서 보고 쓸 수 있습니다.
+- 모든 댓글은 **익명**으로 표시됩니다. 응답에 이름·아이디·user_id를 담지 않으며 관리자에게도 익명입니다.
+  (본인 화면에서만 내 글에 "나" 표시가 붙음)
+- **수정**: 내가 쓴 댓글만 가능하고, 수정한 댓글에는 "(수정됨)"이 붙습니다.
+- **삭제**: 내가 쓴 댓글은 내가 지울 수 있고, 관리자(`admin` 계정)는 모든 댓글을 지울 수 있습니다.
+  - 관리자 계정 아이디는 `server/models.ts`의 `ADMIN_LOGIN_ID`(`admin`)입니다.
+  - 회원가입 화면에서는 `admin`(`Admin`, `ADMIN` 포함) 아이디로 가입할 수 없습니다. 관리자 계정은 아래 명령으로만 만듭니다.
+
+### 관리자 계정 만들기
+
+```bash
+npm run create-admin -- <비밀번호(8자 이상)>              # 로컬 DB(.data/)에 생성
+npm run create-admin -- <새 비밀번호> --reset             # 이미 있으면 비밀번호 다시 설정
+```
+
+배포 DB(Vercel에 연결한 Postgres)에 만들려면 그 DB 주소를 지정해서 실행합니다.
+
+- PowerShell: `$env:DATABASE_URL="postgres://..."; npm run create-admin -- <비밀번호>`
+- bash: `DATABASE_URL=postgres://... npm run create-admin -- <비밀번호>`
+- Supabase면 `DATABASE_CA_CERT`도 함께 지정합니다. 비밀번호를 명령어에 남기기 싫으면 `ADMIN_PASSWORD` 환경변수로 넘겨도 됩니다.
+- 답글이 달린 댓글을 지우면 "삭제된 댓글입니다" 자리만 남고 답글은 유지됩니다.
+- 한 댓글은 최대 1000자입니다.
+
+| 요청 | 설명 |
+|---|---|
+| `GET /api/wishlist` | 목록 (원댓글 최신순, 답글 오래된 순) |
+| `POST /api/wishlist` `{ content, parentId? }` | 댓글/답글 작성 → 최신 목록 반환 |
+| `PUT /api/wishlist?id=123` `{ content }` | 내 댓글 수정 → 최신 목록 반환 |
+| `DELETE /api/wishlist?id=123` | 내 댓글 삭제 (관리자는 모든 댓글) → 최신 목록 반환 |
 
 ### 측정 기준
 
@@ -64,6 +100,7 @@ src/                React 화면
 - `body_size`: `chest_circ`, `waist_circ`, `hip_circ`, `thigh_circ` 추가 (예전 `body_depth`, `leg_thickness`, `waist_width`, `hip_width`는 더 이상 쓰지 않음)
 - `cloth_size`: `chest_width` 추가
 - `pants_size`: `thigh_width` 추가 (예전 `thigh_thickness`는 더 이상 쓰지 않음). `waist`는 허리 단면으로 해석
+- `wish_comment` 테이블 추가 (개발자한테 바라는 목록): `CREATE TABLE IF NOT EXISTS`로 자동 생성, 수정 시각 `updated_at`도 자동 추가
 
 예전 열은 데이터 보존을 위해 지우지 않았습니다. 예전에 저장한 사용자는 새 항목이 기본값으로 채워지고, 화면에 다시 저장하라는 안내가 나옵니다.
 
@@ -85,6 +122,7 @@ npm run dev
 
 ```bash
 npm run test:server   # 핏 분석 테스트 (5가지 체형 + 맞지 않는 옷 + 화장·허리밴드 기준)
+                      # + 개발자한테 바라는 목록 API 테스트 (메모리 DB로 익명 표시·작성·수정·삭제·관리자 권한 확인)
 npm run typecheck     # React + 서버 코드 타입 검사
 ```
 

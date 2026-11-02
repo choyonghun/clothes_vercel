@@ -39,7 +39,9 @@ function mergeSaved<T extends object>(saved: any, defaults: T): { value: T; miss
   return { value, missing };
 }
 
-export default function FittingPage({ userId, username, onLogout }: { userId: number; username: string; onLogout: () => void }) {
+export default function FittingPage({ userId, username, onLogout, onOpenWishlist }: {
+  userId: number; username: string; onLogout: () => void; onOpenWishlist: () => void;
+}) {
   const [body, setBody] = useState<Form<Body>>(DEFAULT_BODY);
   const [top, setTop] = useState<Form<Top>>(DEFAULT_TOP);
   const [pants, setPants] = useState<Form<Pants>>(DEFAULT_PANTS);
@@ -237,6 +239,12 @@ export default function FittingPage({ userId, username, onLogout }: { userId: nu
 
       {/* ── 핏 가이드 ── */}
       <div style={{ ...panel, width: 280, flex: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+        <button onClick={onOpenWishlist} style={{
+          width: "100%", padding: "9px 0", fontSize: 13, fontWeight: 700, backgroundColor: "#e8f0fe", color: "#1967d2",
+          border: "1px solid #d2e3fc", borderRadius: 8, cursor: "pointer",
+        }}>
+          💬 개발자한테 바라는 목록
+        </button>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, borderBottom: "1px solid #f0f0f0" }}>
           <div>
             <span style={{ fontWeight: "bold", color: "#1a73e8", fontSize: 16 }}>{username}</span>

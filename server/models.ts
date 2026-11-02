@@ -119,6 +119,12 @@ export function parsePantsSize(input: unknown) {
   return { value, errors };
 }
 
+/** 관리자 계정 아이디 (이 계정만 모든 댓글을 삭제할 수 있음). 회원가입으로는 만들 수 없고 scripts/create-admin.ts로만 만듦 */
+export const ADMIN_LOGIN_ID = "admin";
+
+/** 회원가입에 쓸 수 없는 아이디 (Admin, ADMIN처럼 대소문자만 바꾼 것도 관리자로 오해할 수 있어 함께 막음) */
+export const isReservedLoginId = (loginId: string) => loginId.trim().toLowerCase() === ADMIN_LOGIN_ID;
+
 export function parseUser(input: unknown) {
   const o = asObject(input);
   const value: User = { loginId: str(o.loginId) ?? "", password: str(o.password) ?? "", username: str(o.username) };
@@ -130,6 +136,19 @@ export function parseUser(input: unknown) {
   if (!value.password.trim()) errors.password = "비밀번호를 입력해주세요.";
   else if (value.password.length < 4 || value.password.length > 100) errors.password = "비밀번호는 4~100자 사이여야 합니다.";
   if (value.username !== null && value.username.length > 50) errors.username = "이름은 50자 이하여야 합니다.";
+  return { value, errors };
+}
+
+// ── 개발자한테 바라는 목록(댓글) ──────────────────────────
+export const COMMENT_MAX = 1000;
+export interface CommentInput { content: string; parentId: number | null }
+
+export function parseComment(input: unknown) {
+  const o = asObject(input);
+  const value: CommentInput = { content: (str(o.content) ?? "").trim(), parentId: userIdOf(o.parentId) };
+  const errors: FieldErrors = {};
+  if (!value.content) errors.content = "내용을 입력해주세요.";
+  else if (value.content.length > COMMENT_MAX) errors.content = `댓글은 ${COMMENT_MAX}자 이하여야 합니다.`;
   return { value, errors };
 }
 

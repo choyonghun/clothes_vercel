@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { route, text, badRequest } from "../../server/http";
-import { parseUser } from "../../server/models";
+import { isReservedLoginId, parseUser } from "../../server/models";
 import { findUserByLoginId, saveUser } from "../../server/repository";
 
 const DUPLICATE = "이미 존재하는 로그인 ID입니다.";
@@ -10,6 +10,8 @@ export default route({
   POST: async (req) => {
     const { value, errors } = parseUser(req.body);
     if (Object.keys(errors).length) return badRequest(errors);
+    // 관리자 아이디는 가입으로 만들 수 없음 (먼저 가입한 사람이 관리자 권한을 가져가지 않도록)
+    if (isReservedLoginId(value.loginId)) return text(400, "사용할 수 없는 아이디입니다.");
 
     if (await findUserByLoginId(value.loginId)) return text(400, DUPLICATE);
     try {
