@@ -18,11 +18,7 @@ CREATE TABLE IF NOT EXISTS body_size (
     height         DOUBLE PRECISION,
     shoulder_width DOUBLE PRECISION,
     arm_length     DOUBLE PRECISION,
-    leg_length     DOUBLE PRECISION,
-    body_depth     DOUBLE PRECISION,
-    leg_thickness  DOUBLE PRECISION,
-    waist_width    DOUBLE PRECISION,
-    hip_width      DOUBLE PRECISION
+    leg_length     DOUBLE PRECISION
 );
 CREATE TABLE IF NOT EXISTS cloth_size (
     user_id       BIGINT PRIMARY KEY,
@@ -35,10 +31,18 @@ CREATE TABLE IF NOT EXISTS pants_size (
     user_id          BIGINT PRIMARY KEY,
     pants_length     DOUBLE PRECISION,
     waist            DOUBLE PRECISION,
-    thigh_thickness  DOUBLE PRECISION,
     rise             DOUBLE PRECISION,
     color            VARCHAR(20)
 );
+-- 측정 기준 변경(두께·폭 → 둘레, 의류는 단면 실측)으로 추가된 열.
+-- 이미 만들어진 DB에도 적용되도록 ADD COLUMN IF NOT EXISTS 로 둠.
+-- 예전 열(body_depth, leg_thickness, waist_width, hip_width, thigh_thickness)은 기존 데이터 보존을 위해 지우지 않고 더 이상 쓰지 않음
+ALTER TABLE body_size  ADD COLUMN IF NOT EXISTS chest_circ  DOUBLE PRECISION;
+ALTER TABLE body_size  ADD COLUMN IF NOT EXISTS waist_circ  DOUBLE PRECISION;
+ALTER TABLE body_size  ADD COLUMN IF NOT EXISTS hip_circ    DOUBLE PRECISION;
+ALTER TABLE body_size  ADD COLUMN IF NOT EXISTS thigh_circ  DOUBLE PRECISION;
+ALTER TABLE cloth_size ADD COLUMN IF NOT EXISTS chest_width DOUBLE PRECISION;
+ALTER TABLE pants_size ADD COLUMN IF NOT EXISTS thigh_width DOUBLE PRECISION;
 `;
 
 let instance: Promise<Db> | null = null;

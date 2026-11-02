@@ -9,5 +9,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["api", "server", "scripts"]
+  "include": ["api", "server", "scripts", "src/fit"]
 }

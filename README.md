@@ -1,6 +1,6 @@
 # clothes_vercel
 
-옷 사이즈 측정·3D 피팅 사이트의 Vercel 배포용 버전입니다.
+옷 사이즈 측정·핏 비교 사이트의 Vercel 배포용 버전입니다.
 기존 `clothes` 프로젝트(Spring Boot + React)와 기능은 같고, Java 백엔드를 Vercel 서버 함수(TypeScript)로 옮겼습니다.
 
 | 기존 (clothes) | 이 프로젝트 |
@@ -8,7 +8,7 @@
 | Spring Boot 컨트롤러 | `api/` 폴더의 Vercel 함수 (API 주소는 그대로) |
 | Redis 세션 | 서명된 로그인 쿠키 (30분, 요청할 때마다 연장) |
 | H2 메모리 DB | Postgres (배포) / PGlite 파일 DB (로컬 개발, `.data/`) |
-| `FitGuideService.java` | `server/fitGuide.ts` |
+| `FitGuideService.java` | `src/fit/analyze.ts` (화면·서버 공용) + `server/fitGuide.ts` (API용 입력 검사) |
 | `FitGuideServiceTest.java` | `server/fitGuide.test.ts` |
 
 ## 폴더 구조
@@ -24,10 +24,45 @@ api/                Vercel 함수 (파일 경로 = API 주소)
   bodycheck/pants.ts        POST /api/bodycheck/pants
   bodycheck/fitguide.ts     POST /api/bodycheck/fitguide
   bodycheck/allstats/[userId].ts  GET /api/bodycheck/allstats/{userId}
-server/             함수들이 공유하는 코드 (DB, 세션, 입력 검증, 핏 분석)
+server/             함수들이 공유하는 코드 (DB, 세션, 입력 검증)
 scripts/            로컬 개발 서버 (배포에는 포함되지 않음)
-src/                React 화면 (기존과 동일)
+src/                React 화면
+  fit/                      치수 정의·신체 형상·핏 판정 (화면과 서버가 같은 코드를 씀)
+  figure/                   정면·측면 핏 다이어그램(SVG), 측정 위치 안내 그림
 ```
+
+## 핏 화면
+
+- **겹쳐 보기 방식**: 옷을 몸 위에 예쁘게 "입히는" 대신, 사람 형태의 실루엣 위에 옷 외곽선을 겹쳐 그립니다.
+  옷 선과 몸 선 사이 간격이 곧 여유이고, 옷이 작으면 외곽선이 몸 안쪽으로 들어갑니다.
+  (옷 폭 = 몸 폭 × 옷 둘레 ÷ 몸 둘레. 그림과 핏 판정이 같은 공식을 써서 "그림은 헐렁한데 꽉 낀다"는 모순이 생기지 않음)
+- **정면 + 측면 2뷰**: 측면에서 몸통 두께·엉덩이·밑위가 보입니다.
+- 문제가 있는 부위에는 `−5cm` 같은 표시가 붙고, 부위나 핏 가이드 항목에 마우스를 올리면 서로 연결되어 강조됩니다.
+- 치수를 바꾸면 300ms 뒤 자동으로 다시 계산합니다 (계산은 브라우저에서 하므로 서버 왕복 없음).
+
+### 측정 기준
+
+| 구분 | 기준 | 항목 |
+|---|---|---|
+| 신체 | 직선 길이 | 키, 어깨 너비(어깨끝점 사이), 팔 길이(어깨끝점→손목), 다리 길이(가랑이→바닥) |
+| 신체 | **둘레** | 가슴, 허리, 엉덩이, 허벅지 |
+| 의류 | 평면 실측 | 어깨 너비(솔기~솔기), 총장(옆목점→밑단), 소매 길이(어깨솔기→소매끝), 바지 안쪽 기장, 밑위 |
+| 의류 | **단면**(반둘레) | 가슴, 허리, 허벅지 — 내부에서 둘레 = 단면 × 2 로 바꿔 신체 둘레와 비교 |
+
+- 소매는 화장 기준(옷 어깨/2 + 소매 − 몸 어깨/2)으로 팔 길이와 비교합니다. 옷 어깨가 좁으면 소매가 그만큼 안쪽에서 시작하기 때문입니다.
+- 바지 허리는 허리 둘레가 아니라 밑위로 계산한 **허리밴드 높이의 몸 둘레**와 비교합니다 (로우라이즈는 골반에 걸림).
+- 입력 칸 옆 `?`에 마우스를 올리면 어디를 재는지 그림으로 보여줍니다.
+
+### DB 변경 (자동 적용)
+
+측정 기준이 바뀌면서 열이 추가되었습니다. `server/db.ts`의 `SCHEMA`가 첫 요청 때
+`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`로 기존 DB에도 자동으로 추가합니다.
+
+- `body_size`: `chest_circ`, `waist_circ`, `hip_circ`, `thigh_circ` 추가 (예전 `body_depth`, `leg_thickness`, `waist_width`, `hip_width`는 더 이상 쓰지 않음)
+- `cloth_size`: `chest_width` 추가
+- `pants_size`: `thigh_width` 추가 (예전 `thigh_thickness`는 더 이상 쓰지 않음). `waist`는 허리 단면으로 해석
+
+예전 열은 데이터 보존을 위해 지우지 않았습니다. 예전에 저장한 사용자는 새 항목이 기본값으로 채워지고, 화면에 다시 저장하라는 안내가 나옵니다.
 
 ## 로컬 실행
 
@@ -46,7 +81,7 @@ npm run dev
 ## 테스트
 
 ```bash
-npm run test:server   # 핏 분석 테스트 (5가지 체형 + 맞지 않는 옷)
+npm run test:server   # 핏 분석 테스트 (5가지 체형 + 맞지 않는 옷 + 화장·허리밴드 기준)
 npm run typecheck     # React + 서버 코드 타입 검사
 ```
 

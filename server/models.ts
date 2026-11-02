@@ -1,18 +1,19 @@
 // 기존 Java 모델(BodySize, ClothSize, PantsSize, User)과 Bean Validation 규칙을 그대로 옮김.
 // 검증 실패 시 응답도 Java GlobalExceptionHandler와 같은 { 필드명: 메시지 } 형태
 
+// 측정 기준: 신체 굵기는 둘레, 의류는 평면 실측(단면). 자세한 정의는 src/fit/types.ts
 export interface BodySize {
   userId: number | null;
   height: number; shoulderWidth: number; armLength: number; legLength: number;
-  bodyDepth: number; legThickness: number; waistWidth: number; hipWidth: number;
+  chestCirc: number; waistCirc: number; hipCirc: number; thighCirc: number;
 }
 export interface ClothSize {
   userId: number | null;
-  shoulder: number; totalLength: number; sleeveLength: number; color: string | null;
+  shoulder: number; chestWidth: number; totalLength: number; sleeveLength: number; color: string | null;
 }
 export interface PantsSize {
   userId: number | null;
-  pantsLength: number; waist: number; thighThickness: number; rise: number; color: string | null;
+  pantsLength: number; waist: number; thighWidth: number; rise: number; color: string | null;
 }
 export interface User {
   userId?: number;
@@ -26,14 +27,15 @@ export class InvalidInput extends Error {}
 // [최소, 최대] — 어노테이션 값과 같은 문자열로 둬야 메시지가 "250.0"처럼 Java와 동일하게 나옴
 type Range = [string, string];
 const BODY_RANGES: Record<Exclude<keyof BodySize, "userId">, Range> = {
-  height: ["50.0", "250.0"], shoulderWidth: ["20.0", "100.0"], armLength: ["30.0", "120.0"], legLength: ["30.0", "150.0"],
-  bodyDepth: ["5.0", "80.0"], legThickness: ["2.0", "50.0"], waistWidth: ["20.0", "100.0"], hipWidth: ["20.0", "100.0"],
+  height: ["50.0", "250.0"], shoulderWidth: ["20.0", "100.0"], armLength: ["20.0", "120.0"], legLength: ["20.0", "150.0"],
+  chestCirc: ["40.0", "200.0"], waistCirc: ["35.0", "200.0"], hipCirc: ["40.0", "200.0"], thighCirc: ["20.0", "120.0"],
 };
-const CLOTH_RANGES: Record<"shoulder" | "totalLength" | "sleeveLength", Range> = {
-  shoulder: ["20.0", "100.0"], totalLength: ["20.0", "200.0"], sleeveLength: ["10.0", "120.0"],
+const CLOTH_RANGES: Record<"shoulder" | "chestWidth" | "totalLength" | "sleeveLength", Range> = {
+  shoulder: ["20.0", "100.0"], chestWidth: ["20.0", "120.0"], totalLength: ["20.0", "200.0"], sleeveLength: ["5.0", "120.0"],
 };
-const PANTS_RANGES: Record<"pantsLength" | "waist" | "thighThickness" | "rise", Range> = {
-  pantsLength: ["30.0", "200.0"], waist: ["20.0", "200.0"], thighThickness: ["2.0", "80.0"], rise: ["5.0", "60.0"],
+// 바지 길이는 안쪽 기장이라 반바지면 10cm 안팎도 가능
+const PANTS_RANGES: Record<"pantsLength" | "waist" | "thighWidth" | "rise", Range> = {
+  pantsLength: ["5.0", "200.0"], waist: ["15.0", "100.0"], thighWidth: ["8.0", "60.0"], rise: ["10.0", "60.0"],
 };
 
 /** Java의 primitive double 필드처럼: 값이 없거나 빈 문자열이면 0, 숫자 문자열은 숫자로, 그 외는 형식 오류 */
@@ -83,7 +85,7 @@ export function parseBodySize(input: unknown) {
   const value: BodySize = {
     userId: userIdOf(o.userId),
     height: num(o.height), shoulderWidth: num(o.shoulderWidth), armLength: num(o.armLength), legLength: num(o.legLength),
-    bodyDepth: num(o.bodyDepth), legThickness: num(o.legThickness), waistWidth: num(o.waistWidth), hipWidth: num(o.hipWidth),
+    chestCirc: num(o.chestCirc), waistCirc: num(o.waistCirc), hipCirc: num(o.hipCirc), thighCirc: num(o.thighCirc),
   };
   const errors: FieldErrors = {};
   checkUserId(value.userId, errors);
@@ -95,7 +97,7 @@ export function parseClothSize(input: unknown) {
   const o = asObject(input);
   const value: ClothSize = {
     userId: userIdOf(o.userId),
-    shoulder: num(o.shoulder), totalLength: num(o.totalLength), sleeveLength: num(o.sleeveLength), color: str(o.color),
+    shoulder: num(o.shoulder), chestWidth: num(o.chestWidth), totalLength: num(o.totalLength), sleeveLength: num(o.sleeveLength), color: str(o.color),
   };
   const errors: FieldErrors = {};
   checkUserId(value.userId, errors);
@@ -108,7 +110,7 @@ export function parsePantsSize(input: unknown) {
   const o = asObject(input);
   const value: PantsSize = {
     userId: userIdOf(o.userId),
-    pantsLength: num(o.pantsLength), waist: num(o.waist), thighThickness: num(o.thighThickness), rise: num(o.rise), color: str(o.color),
+    pantsLength: num(o.pantsLength), waist: num(o.waist), thighWidth: num(o.thighWidth), rise: num(o.rise), color: str(o.color),
   };
   const errors: FieldErrors = {};
   checkUserId(value.userId, errors);
@@ -132,6 +134,6 @@ export function parseUser(input: unknown) {
 }
 
 // 데이터가 아직 없을 때 Java의 new BodySize() 등과 같은 빈 객체 (프론트는 height 등이 0이면 기본값 유지)
-export const emptyBody = (): BodySize => ({ userId: null, height: 0, shoulderWidth: 0, armLength: 0, legLength: 0, bodyDepth: 0, legThickness: 0, waistWidth: 0, hipWidth: 0 });
-export const emptyCloth = (): ClothSize => ({ userId: null, shoulder: 0, totalLength: 0, sleeveLength: 0, color: null });
-export const emptyPants = (): PantsSize => ({ userId: null, pantsLength: 0, waist: 0, thighThickness: 0, rise: 0, color: null });
+export const emptyBody = (): BodySize => ({ userId: null, height: 0, shoulderWidth: 0, armLength: 0, legLength: 0, chestCirc: 0, waistCirc: 0, hipCirc: 0, thighCirc: 0 });
+export const emptyCloth = (): ClothSize => ({ userId: null, shoulder: 0, chestWidth: 0, totalLength: 0, sleeveLength: 0, color: null });
+export const emptyPants = (): PantsSize => ({ userId: null, pantsLength: 0, waist: 0, thighWidth: 0, rise: 0, color: null });

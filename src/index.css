@@ -11,3 +11,17 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* 핏 다이어그램: 포커스된 부위 표시가 은은하게 퍼지는 효과 */
+.fit-hot-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fitPulse 1.2s ease-out infinite;
+}
+@keyframes fitPulse {
+  from { transform: scale(0.7); opacity: 1; }
+  to   { transform: scale(1.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fit-hot-ring { animation: none; }
+}
